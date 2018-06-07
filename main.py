@@ -86,9 +86,6 @@ def calculate_complex_heuristic(board):
         total = total + 2 if i + int(board[i] or 0) == 3 else 1
     return total
 
-def calculate_simple_heuristic(board):
-    return int(board[0] != 1) + int(board[1] != 2) + int(board[2] != 3) + int(board[3] is not None)
-
 
 class Game:
     def __init__(self, initial_state, ai, player):
@@ -108,17 +105,24 @@ class State:
     def __str__(self):
         return str(self.total_board)
 
-    def generate_children(self, parent_map, complex_heuristic=False, dynamic=False):
+    def generate_children(self, parent_map):
         blank_location = self.board.index(None)
-        for i in range(0, 4):
+        for column in range(0, 7):
+            row = 0
+            while row < 6:
+                # If move is legal (there isn't a tile there)
+                if total_board[7*column + row] == 0:
+                    total_board[7*column + row] = b'1'
+
+                row = row + 1
+
+
+
             if i != 3 - blank_location and i != blank_location:
                 new_board = self.board[:]
                 new_board[blank_location], new_board[i] = new_board[i], new_board[blank_location]
                 child = State(new_board, self.depth+1)
-                if complex_heuristic:
-                    child.heuristic = self.depth + calculate_complex_heuristic(child.board)
-                else:
-                    child.heuristic = self.depth + calculate_simple_heuristic(child.board)
+                child.heuristic = self.depth + calculate_complex_heuristic(child.board)
                 if not State.state_in_previous(parent_map, child):
                     self.children.append(child)
                     parent_map[child] = self
