@@ -27,7 +27,7 @@ class Game:
 
     def draw(self):
         """Check current state to determine if it is in a draw"""
-        return not State.is_winning_state(self) and all(self.game_position & (1 << (7 * column + 5)) for column in range(0, 6))
+        return not State.is_winning_state(self.current_state) and all(self.current_state.game_position & (1 << (7 * column + 5)) for column in range(0, 6))
 
     def connected_four(self):
         position = self.current_state
