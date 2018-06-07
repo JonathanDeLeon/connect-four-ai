@@ -11,6 +11,7 @@ import random
 
 infinity = float('inf')
 
+
 def alphabeta_search(state, game):
     """Search game to determine best action; use alpha-beta pruning.
     As in [Figure 5.7], this version searches all the way to the leaves."""
@@ -51,27 +52,11 @@ def alphabeta_search(state, game):
             best_action = a
     return best_action
 
-def query_player(game, state):
-    """Make a move by querying standard input."""
-    print("current state:")
-    game.display(state)
-    print("available moves: {}".format(game.actions(state)))
-    print("")
-    move = None
-    if game.actions(state):
-        move_string = input('Your move? ')
-        try:
-            move = eval(move_string)
-        except NameError:
-            move = move_string
-    else:
-        print('no legal moves: passing turn to next player')
-    return move
-
 
 def random_player(game, state):
     """A player that chooses a legal move at random."""
     return random.choice(game.actions(state)) if game.actions(state) else None
+
 
 def alphabeta_player(game, state):
     return alphabeta_search(state, game)
@@ -86,15 +71,82 @@ def calculate_complex_heuristic(board):
         total = total + 2 if i + int(board[i] or 0) == 3 else 1
     return total
 
+
 def calculate_simple_heuristic(board):
     return int(board[0] != 1) + int(board[1] != 2) + int(board[2] != 3) + int(board[3] is not None)
 
 
 class Game:
-    def __init__(self, initial_state, ai, player):
+    AI = 0
+    PLAYER = 1
+
+    def __init__(self, initial_state):
         self.current_state = initial_state
-        self.ai = ai
-        self.player = player
+        self.turn = self.PLAYER
+
+    def game_over(self):
+        if self.connected_four():
+            """Display who won"""
+            return True
+        elif self.draw():
+            print("Draw...Thank you...come again")
+            return True
+        return False
+
+    def draw(self):
+        """Check current state to determine if it is in a draw"""
+        return False
+
+    def connected_four(self):
+        position = self.current_state
+        # Horizontal check
+        m = position & (position >> 7)
+        if m & (m >> 14):
+            return True
+        # Diagonal \
+        m = position & (position >> 6)
+        if m & (m >> 12):
+            return True
+        # Diagonal /
+        m = position & (position >> 8)
+        if m & (m >> 16):
+            return True
+        # Vertical
+        m = position & (position >> 1)
+        if m & (m >> 2):
+            return True
+        # Nothing found
+        return False
+
+    def next_turn(self):
+        if self.connected_four():
+            return
+
+        if self.turn == self.AI:
+            self.query_AI()
+        else:
+            self.query_player(self.current_state)
+        self.turn = self.turn % 1
+
+    def query_player(game, state):
+        """Make a move by querying standard input."""
+        print("current state:")
+        game.display(state)
+        print("available moves: {}".format(game.actions(state)))
+        print("")
+        move = None
+        if game.actions(state):
+            move_string = input('Your move? ')
+        try:
+            move = eval(move_string)
+        except NameError:
+            move = move_string
+        else:
+            print('no legal moves: passing turn to next player')
+        return move
+
+    def query_AI(self):
+        """AI Stuff"""
 
 
 class State:
@@ -114,7 +166,7 @@ class State:
             if i != 3 - blank_location and i != blank_location:
                 new_board = self.board[:]
                 new_board[blank_location], new_board[i] = new_board[i], new_board[blank_location]
-                child = State(new_board, self.depth+1)
+                child = State(new_board, self.depth + 1)
                 if complex_heuristic:
                     child.heuristic = self.depth + calculate_complex_heuristic(child.board)
                 else:
@@ -134,7 +186,7 @@ class State:
 def Branch_Bound_Complex_Heuristic_Solution(root_node):
     to_visit = [root_node]
     parent_map = {root_node: None}
-    while(to_visit):
+    while (to_visit):
         node = to_visit.pop()
         if node.board == [1, 2, 3, None]:
             solution = []
