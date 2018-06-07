@@ -62,10 +62,6 @@ class Game:
 
     def query_player(self):
         """Make a move by querying standard input."""
-        # print("current state:")
-        # game.display(self.current_state)
-        # print("available moves: {}".format(game.actions(self.current_state)))
-        # print("")
         column = None
         while column is None:
             column = input('Your move identify column [0-6]? ')
@@ -193,6 +189,16 @@ def alphabeta_search(state):
 
 
 def print_board(state):
+    """
+    Helper method to pretty print binary board (6x7 board with top row as sentinel row of 0's)
+    -  -   -   -   -   -   -
+    5  12  19  26  33  40  47
+    4  11  18  25  32  39  46
+    3  10  17  24  31  38  45
+    2  9   16  23  30  37  44
+    1  8   15  22  29  36  43
+    0  7   14  21  28  35  42
+    """
     ai_board, total_board = state.ai_position, state.game_position
     for row in range(5, -1, -1):
         print("")
