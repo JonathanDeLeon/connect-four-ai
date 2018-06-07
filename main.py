@@ -65,12 +65,6 @@ def alphabeta_player(game, state):
 # Importing Ethan's old code
 
 
-def calculate_complex_heuristic(board):
-    total = 0
-    for i in range(0, 4):
-        total = total + 2 if i + int(board[i] or 0) == 3 else 1
-    return total
-
 class Game:
     AI = 0
     PLAYER = 1
@@ -144,65 +138,99 @@ class Game:
         """AI Stuff"""
 
 
+def calculate_heuristic(ai_board, total_board, depth):
+    if is_winning_state(ai_board):
+        return 22
+    elif is_winning_state(ai_board ^ total_board):
+        return -22
+    else:
+        return None
+
+
+def is_winning_state(board):
+    # Horizontal check
+    m = board & (board >> 7)
+    if m & (m >> 14):
+        return True
+    # Diagonal \
+    m = board & (board >> 6)
+    if m & (m >> 12):
+        return True
+    # Diagonal /
+    m = board & (board >> 8)
+    if m & (m >> 16):
+        return True
+    # Vertical
+    m = board & (board >> 1)
+    if m & (m >> 2):
+        return True
+    # Nothing found
+    return False
+
+
+def make_move(position, mask, col):
+    new_position = position ^ mask
+    new_mask = mask | (mask + (1 << (col*7)))
+    return new_position, new_mask
+
+
 class State:
-    def __init__(self, user_board, total_board, depth=0, heuristic=0):
-        self.user_board = user_board
+    def __init__(self, ai_board, total_board, depth=0, heuristic=0, user_turn=0):
+        self.ai_board = ai_board
         self.total_board = total_board
         self.children = []
         self.depth = depth
         self.heuristic = heuristic
 
-    def __str__(self):
-        return str(self.total_board)
+    # def __str__(self):
+    #     return str(self.total_board)
 
     def generate_children(self, parent_map):
+        if self.depth > 4:
+            return
         for column in range(0, 7):
             row = 0
             while row < 6:
                 # If move is legal (there isn't a tile there)
-                if self.total_board[7*column + row] == 0:
-                    self.total_board[7*column + row] = b'1'
+                if not self.total_board & (1 << (7*column + row)):
+                    new_ai_board, new_total_board = make_move(self.ai_board, self.total_board, column)
 
+                    new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
+                    new_state.heuristic = calculate_heuristic(new_state.ai_board, new_state.total_board, new_state.depth)
+                    self.children.append(new_state)
+                    parent_map[new_state] = self
+                    row = 6
                 row = row + 1
 
-            # if i != 3 - blank_location and i != blank_location:
-            #     new_board = self.board[:]
-            #     new_board[blank_location], new_board[i] = new_board[i], new_board[blank_location]
-            #     child = State(new_board, self.depth+1)
-            #     child.heuristic = self.depth + calculate_complex_heuristic(child.board)
-            #     if not State.state_in_previous(parent_map, child):
-            #         self.children.append(child)
-            #         parent_map[child] = self
 
-    @staticmethod
-    def state_in_previous(parent_map, node):
-        return any(
-            node.board == existing.board
-            for existing in parent_map
-        )
-
-
-def Branch_Bound_Complex_Heuristic_Solution(root_node):
+def build_tree(root_node):
     to_visit = [root_node]
     parent_map = {root_node: None}
-    while (to_visit):
+    while to_visit:
         node = to_visit.pop()
-        if node.board == [1, 2, 3, None]:
-            solution = []
-            while node is not None:
-                solution = [node] + solution
-                node = parent_map[node]
-            return solution
-        node.generate_children(parent_map, complex_heuristic=True)
+        # Propagate heuristic upward
+        if node.heuristic is not None:
+            old_node = node
+            parent = parent_map[node]
+            while parent is not None:
+                # If MAX node
+                if parent.depth % 2 == 0:
+                    if parent.heurstic is None or parent.heuristic <= node.heuristic:
+                        parent.heuristic = node.heuristic
+                # If MIN node
+                else:
+                    if parent.heurstic is None or parent.heuristic >= node.heuristic:
+                        parent.heuristic = node.heuristic
+                node = parent
+                parent = parent_map[node]
+            node = old_node
+
+        node.generate_children(parent_map)
         to_visit = node.children + to_visit
-        to_visit.sort(key=lambda x: x.heuristic, reverse=True)
-    return None
+    return root_node
 
 
 if __name__ == "__main__":
-    root = State([3, 1, 2, None])
-    solution = Branch_Bound_Complex_Heuristic_Solution(root)
-    print("Branch and Bound Complex Heuristic solution = [", end='')
-    for i in solution:
-        print(i, '\b, ', end='')
-    print("\b\b]")
+    root = State(0, 0)
+    solution = build_tree(root)
+    print([h.heuristic for h in solution.children])
