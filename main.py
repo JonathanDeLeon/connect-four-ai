@@ -120,13 +120,18 @@ def is_winning_state(board):
 
 
 def make_move(position, mask, col):
-    new_position = position ^ mask
+    opponent_position = position ^ mask
     new_mask = mask | (mask + (1 << (col * 7)))
-    return new_position, new_mask
+    return opponent_position ^ new_mask, new_mask
+
+
+def make_move_opponent(position, mask, col):
+    new_mask = mask | (mask + (1 << (col * 7)))
+    return position, new_mask
 
 
 class State:
-    def __init__(self, ai_position, game_position, depth=0, heuristic=0, user_turn=0):
+    def __init__(self, ai_position, game_position, depth=0, heuristic=None):
         self.ai_position = ai_position
         self.game_position = game_position
         self.children = []
