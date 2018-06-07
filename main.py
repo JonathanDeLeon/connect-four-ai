@@ -205,9 +205,6 @@ def print_board(state):
 
 
 if __name__ == "__main__":
-    # root = State(0,0)
-    # print_board(alphabeta_search(root))
-
     game = Game()
 
     print("Welcome to Connect Four!")
@@ -215,4 +212,3 @@ if __name__ == "__main__":
     while not game.is_game_over():
         game.next_turn()
         print_board(game.current_state)
-    # print(game.query_player())
