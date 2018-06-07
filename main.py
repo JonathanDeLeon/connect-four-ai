@@ -242,13 +242,14 @@ def print_board(state):
     ai_board, total_board = state.ai_position, state.game_position
     for row in range(5, -1, -1):
         print("")
-        for column in range(6, -1, -1):
+        for column in range(0, 7):
             if ai_board & (1 << (7 * column + row)):
                 print("1", end='')
             elif total_board & (1 << (7 * column + row)):
                 print("2", end='')
             else:
                 print("0", end='')
+    print("")
 
 
 if __name__ == "__main__":
