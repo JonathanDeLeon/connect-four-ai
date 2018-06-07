@@ -12,13 +12,14 @@ class Game:
     AI = 0
     PLAYER = 1
 
-    def __init__(self, initial_state):
-        self.current_state = initial_state
+    def __init__(self):
+        self.current_state = State(0, 0)
         self.turn = self.PLAYER
 
-    def game_over(self):
-        if self.connected_four():
+    def is_game_over(self):
+        if self.has_winning_state():
             """Display who won"""
+            print("AI Bot won!") if self.turn == self.AI else print("Congratulations, you won!")
             return True
         elif self.draw():
             print("Draw...Thank you...come again")
@@ -27,38 +28,21 @@ class Game:
 
     def draw(self):
         """Check current state to determine if it is in a draw"""
-        return not State.is_winning_state(self.current_state) and all(self.current_state.game_position & (1 << (7 * column + 5)) for column in range(0, 6))
+        return not self.has_winning_state() and all(self.current_state.game_position & (1 << (7 * column + 5)) for column in range(0, 6))
 
-    def connected_four(self):
-        position = self.current_state
-        # Horizontal check
-        m = position & (position >> 7)
-        if m & (m >> 14):
-            return True
-        # Diagonal \
-        m = position & (position >> 6)
-        if m & (m >> 12):
-            return True
-        # Diagonal /
-        m = position & (position >> 8)
-        if m & (m >> 16):
-            return True
-        # Vertical
-        m = position & (position >> 1)
-        if m & (m >> 2):
-            return True
-        # Nothing found
-        return False
+    def has_winning_state(self):
+        return State.is_winning_state(self.current_state.ai_position) or State.is_winning_state(self.current_state.ai_position ^ self.current_state.game_position)
 
     def next_turn(self):
-        if self.connected_four():
-            return
-
         if self.turn == self.AI:
             self.query_AI()
         else:
             self.query_player()
-        self.turn = self.turn % 1
+
+        if self.has_winning_state():
+            return self.is_game_over()
+
+        self.turn = (self.turn + 1) % 2
 
     def query_player(self):
         """Make a move by querying standard input."""
@@ -74,11 +58,16 @@ class Game:
                 print("Invalid move. Try again...")
                 column = None
 
-        return column
+        new_position, new_game_position = make_move(self.current_state.player_position,
+                                                    self.current_state.player_position, column)
+        self.current_state.game_position = new_game_position
+        self.current_state.depth += 1
+        # self.current_state = State(new_position, new_game_position, self.current_state.depth + 1)
 
     def query_AI(self):
-        """AI Stuff"""
-        alphabeta_search(self.current_state)
+        """ AI Bot chooses next best move from current state """
+        print("\nAI's Move...")
+        self.current_state = alphabeta_search(self.current_state)
 
 
 def make_move(position, mask, col):
@@ -93,25 +82,14 @@ def make_move_opponent(position, mask, col):
 
 
 class State:
-    def __init__(self, ai_position, game_position, depth=0, heuristic=None):
+    def __init__(self, ai_position, game_position, depth=0):
         self.ai_position = ai_position
         self.game_position = game_position
         self.depth = depth
-        self.heuristic = heuristic
 
-    def terminal_test(self):
-        if State.is_winning_state(self.ai_position) or State.is_winning_state(self.ai_position ^ self.game_position):
-            return True
-        else:
-            return False
-
-    def calculate_heuristic(self):
-        if self.is_winning_state(self.ai_position):
-            return 22 - self.depth
-        elif self.is_winning_state(self.ai_position ^ self.game_position):
-            return -1 * (22 - self.depth)
-        else:
-            return None
+    @property
+    def player_position(self):
+        return self.ai_position ^ self.game_position
 
     @staticmethod
     def is_winning_state(position):
@@ -134,12 +112,26 @@ class State:
         # Nothing found
         return False
 
+    def terminal_test(self):
+        if State.is_winning_state(self.ai_position) or State.is_winning_state(self.ai_position ^ self.game_position):
+            return True
+        else:
+            return False
+
+    def calculate_heuristic(self):
+        if self.is_winning_state(self.ai_position):
+            return 22 - self.depth
+        elif self.is_winning_state(self.ai_position ^ self.game_position):
+            return -1 * (22 - self.depth)
+        else:
+            return None
+
     def generate_children(self):
+        """ For each column entry, generate a new State if the new position is valid"""
         for column in range(0, 7):
             if not self.game_position & (1 << (7 * column + 5)):
                 new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
-                # Before creating, check if it is a valid move or if we have seen the move before
-                yield State(new_ai_position, new_game_position, self.depth + 1, None)
+                yield State(new_ai_position, new_game_position, self.depth + 1)
 
     def __str__(self):
         # return str(self.game_position)
@@ -184,7 +176,7 @@ def alphabeta_search(state):
         if v > best_score:
             best_score = v
             best_action = child
-    print(best_score)
+    # print(best_score)
     return best_action
 
 
@@ -213,8 +205,14 @@ def print_board(state):
 
 
 if __name__ == "__main__":
-    root = State(0, 0)
-    print_board(alphabeta_search(root))
+    # root = State(0,0)
+    # print_board(alphabeta_search(root))
 
-    # game = Game()
+    game = Game()
+
+    print("Welcome to Connect Four!")
+    print_board(game.current_state)
+    while not game.is_game_over():
+        game.next_turn()
+        print_board(game.current_state)
     # print(game.query_player())
