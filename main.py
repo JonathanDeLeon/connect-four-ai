@@ -108,16 +108,16 @@ class State:
         self.heuristic = heuristic
 
     def terminal_test(self):
-        if self.depth > 7:
+        if State.is_winning_state(self.ai_position) or State.is_winning_state(self.ai_position ^ self.game_position):
             return True
         else:
             return False
 
     def calculate_heuristic(self):
         if self.is_winning_state(self.ai_position):
-            return 22
+            return 22 - self.depth
         elif self.is_winning_state(self.ai_position ^ self.game_position):
-            return -22
+            return -1 * (22 - self.depth)
         else:
             return None
 
@@ -157,9 +157,10 @@ class State:
             #         parent_map[new_state] = self
             #         row = 6
             #     row = row + 1
-            new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
-            # Before creating, check if it is a valid move or if we have seen the move before
-            yield State(new_ai_position, new_game_position, self.depth + 1, None)
+            if not self.game_position & (1 << (7 * column + 5)):
+                new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
+                # Before creating, check if it is a valid move or if we have seen the move before
+                yield State(new_ai_position, new_game_position, self.depth + 1, None)
 
             # new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
             # new_state.heuristic = calculate_heuristic(new_state.ai_position, new_state.game_position,
@@ -193,7 +194,7 @@ def alphabeta_search(state):
             return state.calculate_heuristic()
         v = infinity
         for child in state.generate_children():
-            v = max(v, max_value(child, alpha, beta))
+            v = min(v, max_value(child, alpha, beta))
             if v <= alpha:
                 return v
             beta = min(beta, v)
@@ -208,34 +209,8 @@ def alphabeta_search(state):
         if v > best_score:
             best_score = v
             best_action = child
+    print(best_score)
     return best_action
-
-
-def build_tree(root_node):
-    to_visit = [root_node]
-    parent_map = {root_node: None}
-    while to_visit:
-        node = to_visit.pop()
-        # Propagate heuristic upward
-        if node.heuristic is not None:
-            old_node = node
-            parent = parent_map[node]
-            while parent is not None:
-                # If MAX node
-                if parent.depth % 2 == 0:
-                    if parent.heurstic is None or parent.heuristic <= node.heuristic:
-                        parent.heuristic = node.heuristic
-                # If MIN node
-                else:
-                    if parent.heurstic is None or parent.heuristic >= node.heuristic:
-                        parent.heuristic = node.heuristic
-                node = parent
-                parent = parent_map[node]
-            node = old_node
-
-        node.generate_children(parent_map)
-        to_visit = node.children + to_visit
-    return root_node
 
 
 def print_board(state):
@@ -256,7 +231,8 @@ if __name__ == "__main__":
     root = State(0, 0)
     # solution = build_tree(root)
     # print([h.heuristic for h in solution.children])
-    print_board(alphabeta_search(root))
+    result = alphabeta_search(root)
+    print_board(result)
 
     # game = Game()
     # print(game.query_player())
