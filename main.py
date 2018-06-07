@@ -7,10 +7,6 @@
 # Problem:
 # Create a Connect Four game and implement an AI bot that uses minimax algorithm with alpha-beta pruning
 
-import random
-
-infinity = float('inf')
-
 
 class Game:
     AI = 0
@@ -172,11 +168,13 @@ class State:
         return '{0:049b}'.format(self.game_position)
 
 
-def alphabeta_search(state):
-    """Search game to determine best action; use alpha-beta pruning.
-    As in [Figure 5.7], this version searches all the way to the leaves."""
+infinity = float('inf')
 
-    # Functions used by alphabeta
+
+def alphabeta_search(state):
+    """Search game state to determine best action; use alpha-beta pruning. """
+
+    # Functions used by alpha beta
     def max_value(state, alpha, beta):
         if state.terminal_test():
             return state.calculate_heuristic()
@@ -199,7 +197,7 @@ def alphabeta_search(state):
             beta = min(beta, v)
         return v
 
-    # Body of alphabeta_search:
+    # Body of alpha beta_search:
     best_score = -infinity
     beta = infinity
     best_action = None
@@ -209,33 +207,6 @@ def alphabeta_search(state):
             best_score = v
             best_action = child
     return best_action
-
-
-def build_tree(root_node):
-    to_visit = [root_node]
-    parent_map = {root_node: None}
-    while to_visit:
-        node = to_visit.pop()
-        # Propagate heuristic upward
-        if node.heuristic is not None:
-            old_node = node
-            parent = parent_map[node]
-            while parent is not None:
-                # If MAX node
-                if parent.depth % 2 == 0:
-                    if parent.heurstic is None or parent.heuristic <= node.heuristic:
-                        parent.heuristic = node.heuristic
-                # If MIN node
-                else:
-                    if parent.heurstic is None or parent.heuristic >= node.heuristic:
-                        parent.heuristic = node.heuristic
-                node = parent
-                parent = parent_map[node]
-            node = old_node
-
-        node.generate_children(parent_map)
-        to_visit = node.children + to_visit
-    return root_node
 
 
 def print_board(state):
@@ -254,8 +225,6 @@ def print_board(state):
 
 if __name__ == "__main__":
     root = State(0, 0)
-    # solution = build_tree(root)
-    # print([h.heuristic for h in solution.children])
     print_board(alphabeta_search(root))
 
     # game = Game()
