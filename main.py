@@ -243,11 +243,24 @@ def build_tree(root_node):
     return root_node
 
 
+def print_board(state):
+    ai_board, total_board = state.ai_position, state.game_position
+    for row in range(5, -1, -1):
+        print("")
+        for column in range(6, -1, -1):
+            if ai_board & (1 << (7 * column + row)):
+                print("1", end='')
+            elif total_board & (1 << (7 * column + row)):
+                print("2", end='')
+            else:
+                print("0", end='')
+
+
 if __name__ == "__main__":
     root = State(0, 0)
     # solution = build_tree(root)
     # print([h.heuristic for h in solution.children])
-    print(alphabeta_search(root))
+    print_board(alphabeta_search(root))
 
     # game = Game()
     # print(game.query_player())
