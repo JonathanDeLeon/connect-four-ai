@@ -89,36 +89,6 @@ class Game:
         alphabeta_search(self.current_state)
 
 
-def calculate_heuristic(ai_position, game_position, depth):
-    if is_winning_state(ai_position):
-        return 22
-    elif is_winning_state(ai_position ^ game_position):
-        return -22
-    else:
-        return None
-
-
-def is_winning_state(board):
-    # Horizontal check
-    m = board & (board >> 7)
-    if m & (m >> 14):
-        return True
-    # Diagonal \
-    m = board & (board >> 6)
-    if m & (m >> 12):
-        return True
-    # Diagonal /
-    m = board & (board >> 8)
-    if m & (m >> 16):
-        return True
-    # Vertical
-    m = board & (board >> 1)
-    if m & (m >> 2):
-        return True
-    # Nothing found
-    return False
-
-
 def make_move(position, mask, col):
     opponent_position = position ^ mask
     new_mask = mask | (mask + (1 << (col * 7)))
@@ -134,19 +104,43 @@ class State:
     def __init__(self, ai_position, game_position, depth=0, heuristic=None):
         self.ai_position = ai_position
         self.game_position = game_position
-        self.children = []
         self.depth = depth
         self.heuristic = heuristic
-
-    def __str__(self):
-        # return str(self.game_position)
-        return '{0:049b}'.format(self.game_position)
 
     def terminal_test(self):
         if self.depth > 7:
             return True
         else:
             return False
+
+    def calculate_heuristic(self):
+        if self.is_winning_state(self.ai_position):
+            return 22
+        elif self.is_winning_state(self.ai_position ^ self.game_position):
+            return -22
+        else:
+            return None
+
+    @staticmethod
+    def is_winning_state(position):
+        # Horizontal check
+        m = position & (position >> 7)
+        if m & (m >> 14):
+            return True
+        # Diagonal \
+        m = position & (position >> 6)
+        if m & (m >> 12):
+            return True
+        # Diagonal /
+        m = position & (position >> 8)
+        if m & (m >> 16):
+            return True
+        # Vertical
+        m = position & (position >> 1)
+        if m & (m >> 2):
+            return True
+        # Nothing found
+        return False
 
     def generate_children(self):
         for column in range(0, 7):
@@ -163,15 +157,19 @@ class State:
             #         parent_map[new_state] = self
             #         row = 6
             #     row = row + 1
-            new_ai_board, new_total_board = make_move(self.ai_position, self.game_position, column)
+            new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
             # Before creating, check if it is a valid move or if we have seen the move before
-            yield State(new_ai_board, new_total_board, self.depth + 1, None)
+            yield State(new_ai_position, new_game_position, self.depth + 1, None)
 
             # new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
             # new_state.heuristic = calculate_heuristic(new_state.ai_position, new_state.game_position,
             #                                           new_state.depth)
             # self.children.append(new_state)
             # parent_map[new_state] = self
+
+    def __str__(self):
+        # return str(self.game_position)
+        return '{0:049b}'.format(self.game_position)
 
 
 def alphabeta_search(state):
@@ -181,10 +179,9 @@ def alphabeta_search(state):
     # Functions used by alphabeta
     def max_value(state, alpha, beta):
         if state.terminal_test():
-            return 22
+            return state.calculate_heuristic()
         v = -infinity
         for child in state.generate_children():
-            print(child)
             v = max(v, min_value(child, alpha, beta))
             if v >= beta:
                 return v
@@ -193,10 +190,9 @@ def alphabeta_search(state):
 
     def min_value(state, alpha, beta):
         if state.terminal_test():
-            return -22
+            return state.calculate_heuristic()
         v = infinity
         for child in state.generate_children():
-            print(child)
             v = max(v, max_value(child, alpha, beta))
             if v <= alpha:
                 return v
@@ -208,7 +204,6 @@ def alphabeta_search(state):
     beta = infinity
     best_action = None
     for child in state.generate_children():
-        print(child)
         v = min_value(child, best_score, beta)
         if v > best_score:
             best_score = v
