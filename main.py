@@ -121,7 +121,8 @@ class State:
         else:
             return None
 
-    def is_winning_state(self, position):
+    @staticmethod
+    def is_winning_state(position):
         # Horizontal check
         m = position & (position >> 7)
         if m & (m >> 14):
