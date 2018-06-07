@@ -7,10 +7,6 @@
 # Problem:
 # Create a Connect Four game and implement an AI bot that uses minimax algorithm with alpha-beta pruning
 
-import random
-
-infinity = float('inf')
-
 
 class Game:
     AI = 0
@@ -173,11 +169,13 @@ class State:
         return '{0:049b}'.format(self.game_position)
 
 
-def alphabeta_search(state):
-    """Search game to determine best action; use alpha-beta pruning.
-    As in [Figure 5.7], this version searches all the way to the leaves."""
+infinity = float('inf')
 
-    # Functions used by alphabeta
+
+def alphabeta_search(state):
+    """Search game state to determine best action; use alpha-beta pruning. """
+
+    # Functions used by alpha beta
     def max_value(state, alpha, beta):
         if state.terminal_test():
             return state.calculate_heuristic()
@@ -200,7 +198,7 @@ def alphabeta_search(state):
             beta = min(beta, v)
         return v
 
-    # Body of alphabeta_search:
+    # Body of alpha beta_search:
     best_score = -infinity
     beta = infinity
     best_action = None
@@ -229,10 +227,7 @@ def print_board(state):
 
 if __name__ == "__main__":
     root = State(0, 0)
-    # solution = build_tree(root)
-    # print([h.heuristic for h in solution.children])
-    result = alphabeta_search(root)
-    print_board(result)
+    print_board(alphabeta_search(root))
 
     # game = Game()
     # print(game.query_player())
