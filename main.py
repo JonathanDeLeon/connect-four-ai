@@ -140,29 +140,10 @@ class State:
 
     def generate_children(self):
         for column in range(0, 7):
-            # row = 0
-            # while row < 6:
-            #     # If move is legal (there isn't a tile there)
-            #     if not self.game_position & (1 << (7 * column + row)):
-            #         new_ai_board, new_total_board = make_move(self.ai_position, self.game_position, column)
-            #
-            #         new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
-            #         new_state.heuristic = calculate_heuristic(new_state.ai_position, new_state.game_position,
-            #                                                   new_state.depth)
-            #         self.children.append(new_state)
-            #         parent_map[new_state] = self
-            #         row = 6
-            #     row = row + 1
             if not self.game_position & (1 << (7 * column + 5)):
                 new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
                 # Before creating, check if it is a valid move or if we have seen the move before
                 yield State(new_ai_position, new_game_position, self.depth + 1, None)
-
-            # new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
-            # new_state.heuristic = calculate_heuristic(new_state.ai_position, new_state.game_position,
-            #                                           new_state.depth)
-            # self.children.append(new_state)
-            # parent_map[new_state] = self
 
     def __str__(self):
         # return str(self.game_position)
