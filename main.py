@@ -9,8 +9,8 @@
 
 
 class Game:
-    AI = 0
-    PLAYER = 1
+    AI = -1
+    PLAYER = 0
 
     def __init__(self):
         self.current_state = State(0, 0)
@@ -42,7 +42,9 @@ class Game:
         if self.has_winning_state():
             return self.is_game_over()
 
-        self.turn = (self.turn + 1) % 2
+        #self.turn = (self.turn + 1) % 2
+        # Apply one's complement (invert bits); 0 ~= -1
+        self.turn = ~self.turn
 
     def query_player(self):
         """Make a move by querying standard input."""
@@ -51,15 +53,16 @@ class Game:
             column = input('Your move identify column [0-6]? ')
             try:
                 column = int(column)
+                # Check if move is legal
                 if not 0 <= column <= 6:
                     raise ValueError
-                """Check if move is legal"""
-            except ValueError:
+                if self.current_state.game_position & (1 << (7 * column + 5)):
+                    raise IndexError
+            except (ValueError, IndexError):
                 print("Invalid move. Try again...")
                 column = None
-
         new_position, new_game_position = make_move(self.current_state.player_position,
-                                                    self.current_state.player_position, column)
+                                                    self.current_state.game_position, column)
         self.current_state.game_position = new_game_position
         self.current_state.depth += 1
         # self.current_state = State(new_position, new_game_position, self.current_state.depth + 1)
@@ -171,12 +174,13 @@ def alphabeta_search(state):
     best_score = -infinity
     beta = infinity
     best_action = None
+    # TODO: Debug value of v
     for child in state.generate_children():
         v = min_value(child, best_score, beta)
+        print(v)
         if v > best_score:
             best_score = v
             best_action = child
-    # print(best_score)
     return best_action
 
 
