@@ -12,59 +12,6 @@ import random
 infinity = float('inf')
 
 
-def alphabeta_search(state, game):
-    """Search game to determine best action; use alpha-beta pruning.
-    As in [Figure 5.7], this version searches all the way to the leaves."""
-
-    player = game.to_move(state)
-
-    # Functions used by alphabeta
-    def max_value(state, alpha, beta):
-        if game.terminal_test(state):
-            return game.utility(state, player)
-        v = -infinity
-        for a in game.actions(state):
-            v = max(v, min_value(game.result(state, a), alpha, beta))
-            if v >= beta:
-                return v
-            alpha = max(alpha, v)
-        return v
-
-    def min_value(state, alpha, beta):
-        if game.terminal_test(state):
-            return game.utility(state, player)
-        v = infinity
-        for a in game.actions(state):
-            v = min(v, max_value(game.result(state, a), alpha, beta))
-            if v <= alpha:
-                return v
-            beta = min(beta, v)
-        return v
-
-    # Body of alphabeta_search:
-    best_score = -infinity
-    beta = infinity
-    best_action = None
-    for a in game.actions(state):
-        v = min_value(game.result(state, a), best_score, beta)
-        if v > best_score:
-            best_score = v
-            best_action = a
-    return best_action
-
-
-def random_player(game, state):
-    """A player that chooses a legal move at random."""
-    return random.choice(game.actions(state)) if game.actions(state) else None
-
-
-def alphabeta_player(game, state):
-    return alphabeta_search(state, game)
-
-
-# Importing Ethan's old code
-
-
 class Game:
     AI = 0
     PLAYER = 1
@@ -139,12 +86,13 @@ class Game:
 
     def query_AI(self):
         """AI Stuff"""
+        alphabeta_search(self.current_state)
 
 
-def calculate_heuristic(ai_board, total_board, depth):
-    if is_winning_state(ai_board):
+def calculate_heuristic(ai_position, game_position, depth):
+    if is_winning_state(ai_position):
         return 22
-    elif is_winning_state(ai_board ^ total_board):
+    elif is_winning_state(ai_position ^ game_position):
         return -22
     else:
         return None
@@ -178,33 +126,89 @@ def make_move(position, mask, col):
 
 
 class State:
-    def __init__(self, ai_board, total_board, depth=0, heuristic=0, user_turn=0):
-        self.ai_board = ai_board
-        self.total_board = total_board
+    def __init__(self, ai_position, game_position, depth=0, heuristic=0, user_turn=0):
+        self.ai_position = ai_position
+        self.game_position = game_position
         self.children = []
         self.depth = depth
         self.heuristic = heuristic
 
-    # def __str__(self):
-    #     return str(self.total_board)
+    def __str__(self):
+        # return str(self.game_position)
+        return '{0:049b}'.format(self.game_position)
 
-    def generate_children(self, parent_map):
-        if self.depth > 4:
-            return
+    def terminal_test(self):
+        if self.depth > 7:
+            return True
+        else:
+            return False
+
+    def generate_children(self):
         for column in range(0, 7):
-            row = 0
-            while row < 6:
-                # If move is legal (there isn't a tile there)
-                if not self.total_board & (1 << (7 * column + row)):
-                    new_ai_board, new_total_board = make_move(self.ai_board, self.total_board, column)
+            # row = 0
+            # while row < 6:
+            #     # If move is legal (there isn't a tile there)
+            #     if not self.game_position & (1 << (7 * column + row)):
+            #         new_ai_board, new_total_board = make_move(self.ai_position, self.game_position, column)
+            #
+            #         new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
+            #         new_state.heuristic = calculate_heuristic(new_state.ai_position, new_state.game_position,
+            #                                                   new_state.depth)
+            #         self.children.append(new_state)
+            #         parent_map[new_state] = self
+            #         row = 6
+            #     row = row + 1
+            new_ai_board, new_total_board = make_move(self.ai_position, self.game_position, column)
+            # Before creating, check if it is a valid move or if we have seen the move before
+            yield State(new_ai_board, new_total_board, self.depth + 1, None)
 
-                    new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
-                    new_state.heuristic = calculate_heuristic(new_state.ai_board, new_state.total_board,
-                                                              new_state.depth)
-                    self.children.append(new_state)
-                    parent_map[new_state] = self
-                    row = 6
-                row = row + 1
+            # new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
+            # new_state.heuristic = calculate_heuristic(new_state.ai_position, new_state.game_position,
+            #                                           new_state.depth)
+            # self.children.append(new_state)
+            # parent_map[new_state] = self
+
+
+def alphabeta_search(state):
+    """Search game to determine best action; use alpha-beta pruning.
+    As in [Figure 5.7], this version searches all the way to the leaves."""
+
+    # Functions used by alphabeta
+    def max_value(state, alpha, beta):
+        if state.terminal_test():
+            return 22
+        v = -infinity
+        for child in state.generate_children():
+            print(child)
+            v = max(v, min_value(child, alpha, beta))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
+
+    def min_value(state, alpha, beta):
+        if state.terminal_test():
+            return -22
+        v = infinity
+        for child in state.generate_children():
+            print(child)
+            v = max(v, max_value(child, alpha, beta))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
+
+    # Body of alphabeta_search:
+    best_score = -infinity
+    beta = infinity
+    best_action = None
+    for child in state.generate_children():
+        print(child)
+        v = min_value(child, best_score, beta)
+        if v > best_score:
+            best_score = v
+            best_action = child
+    return best_action
 
 
 def build_tree(root_node):
@@ -236,8 +240,9 @@ def build_tree(root_node):
 
 if __name__ == "__main__":
     root = State(0, 0)
-    solution = build_tree(root)
-    print([h.heuristic for h in solution.children])
+    # solution = build_tree(root)
+    # print([h.heuristic for h in solution.children])
+    print(alphabeta_search(root))
 
     # game = Game()
     # print(game.query_player())
