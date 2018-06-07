@@ -114,25 +114,28 @@ class Game:
         if self.turn == self.AI:
             self.query_AI()
         else:
-            self.query_player(self.current_state)
+            self.query_player()
         self.turn = self.turn % 1
 
-    def query_player(game, state):
+    def query_player(self):
         """Make a move by querying standard input."""
-        print("current state:")
-        game.display(state)
-        print("available moves: {}".format(game.actions(state)))
-        print("")
-        move = None
-        if game.actions(state):
-            move_string = input('Your move? ')
-        try:
-            move = eval(move_string)
-        except NameError:
-            move = move_string
-        else:
-            print('no legal moves: passing turn to next player')
-        return move
+        # print("current state:")
+        # game.display(self.current_state)
+        # print("available moves: {}".format(game.actions(self.current_state)))
+        # print("")
+        column = None
+        while column is None:
+            column = input('Your move identify column [0-6]? ')
+            try:
+                column = int(column)
+                if not 0 <= column <= 6:
+                    raise ValueError
+                """Check if move is legal"""
+            except ValueError:
+                print("Invalid move. Try again...")
+                column = None
+
+        return column
 
     def query_AI(self):
         """AI Stuff"""
@@ -170,7 +173,7 @@ def is_winning_state(board):
 
 def make_move(position, mask, col):
     new_position = position ^ mask
-    new_mask = mask | (mask + (1 << (col*7)))
+    new_mask = mask | (mask + (1 << (col * 7)))
     return new_position, new_mask
 
 
@@ -192,11 +195,12 @@ class State:
             row = 0
             while row < 6:
                 # If move is legal (there isn't a tile there)
-                if not self.total_board & (1 << (7*column + row)):
+                if not self.total_board & (1 << (7 * column + row)):
                     new_ai_board, new_total_board = make_move(self.ai_board, self.total_board, column)
 
                     new_state = State(new_ai_board, new_total_board, self.depth + 1, None)
-                    new_state.heuristic = calculate_heuristic(new_state.ai_board, new_state.total_board, new_state.depth)
+                    new_state.heuristic = calculate_heuristic(new_state.ai_board, new_state.total_board,
+                                                              new_state.depth)
                     self.children.append(new_state)
                     parent_map[new_state] = self
                     row = 6
@@ -234,3 +238,6 @@ if __name__ == "__main__":
     root = State(0, 0)
     solution = build_tree(root)
     print([h.heuristic for h in solution.children])
+
+    # game = Game()
+    # print(game.query_player())
