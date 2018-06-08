@@ -34,7 +34,7 @@ def run():
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
     DISPLAYSURF = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
-    pygame.display.set_caption('Four in a Row')
+    pygame.display.set_caption('Connect Four against AI')
 
     REDPILERECT = pygame.Rect(int(SPACESIZE / 2), WINDOWHEIGHT - int(3 * SPACESIZE / 2), SPACESIZE, SPACESIZE)
     BLACKPILERECT = pygame.Rect(WINDOWWIDTH - int(3 * SPACESIZE / 2), WINDOWHEIGHT - int(3 * SPACESIZE / 2), SPACESIZE,
@@ -117,6 +117,11 @@ def drawBoard(board, extraToken=None):
     # draw the red and black tokens off to the side
     DISPLAYSURF.blit(REDTOKENIMG, REDPILERECT)  # red on the left
     DISPLAYSURF.blit(BLACKTOKENIMG, BLACKPILERECT)  # black on the right
+
+
+def updateDisplay():
+    pygame.display.update()
+    FPSCLOCK.tick()
 
 
 def getHumanInteraction(board):

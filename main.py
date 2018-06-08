@@ -23,6 +23,7 @@ class Game:
     def __init__(self, game_board):
         self.current_state = State(0, 0)
         self.turn = self.AI
+        self.first = self.turn
         self.board = game_board
 
     def is_game_over(self):
@@ -70,6 +71,7 @@ class Game:
             except (ValueError, IndexError):
                 print("Invalid move. Try again...")
                 column = None
+
         GUI.dropHumanToken(self.board, column)
 
         new_position, new_game_position = make_move(self.current_state.player_position,
@@ -80,7 +82,7 @@ class Game:
         """ AI Bot chooses next best move from current state """
         print("\nAI's Move...")
         temp_position = self.current_state.ai_position
-        self.current_state = alphabeta_search(self.current_state, d=7)
+        self.current_state = alphabeta_search(self.current_state, self.first, d=7)
 
         # Get column for GUI
         column = temp_position ^ self.current_state.ai_position
@@ -177,13 +179,13 @@ class State:
             # MIN node returns
             return -infinity
 
-    def generate_children(self):
+    def generate_children(self, who_went_first):
         """ For each column entry, generate a new State if the new position is valid"""
         for i in range(0, 7):
             # Select column starting from the middle and then to the edges index order [3,2,4,1,5,0,6]
             column = 3 + (1 - 2 * (i % 2)) * (i + 1) // 2
             if not self.game_position & (1 << (7 * column + 5)):
-                if self.depth % 2 == 0:
+                if (who_went_first == -1 and self.depth % 2 == 0) or (who_went_first == 0 and self.depth % 2 == 1):
                     # AI (MAX) Move
                     new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
                 else:
@@ -203,7 +205,7 @@ class State:
             other.ai_position, other.game_position, other.depth % 2)
 
 
-def alphabeta_search(state, d=7):
+def alphabeta_search(state, turn=-1, d=7):
     """Search game state to determine best action; use alpha-beta pruning. """
 
     # Functions used by alpha beta
@@ -212,7 +214,7 @@ def alphabeta_search(state, d=7):
             return state.calculate_heuristic()
 
         v = -infinity
-        for child in state.generate_children():
+        for child in state.generate_children(turn):
             if child in seen:
                 continue
             v = max(v, min_value(child, alpha, beta, depth + 1))
@@ -232,7 +234,7 @@ def alphabeta_search(state, d=7):
             return state.calculate_heuristic()
 
         v = infinity
-        for child in state.generate_children():
+        for child in state.generate_children(turn):
             if child in seen:
                 continue
             v = min(v, max_value(child, alpha, beta, depth + 1))
@@ -255,7 +257,7 @@ def alphabeta_search(state, d=7):
     best_score = -infinity
     beta = infinity
     best_action = None
-    for child in state.generate_children():
+    for child in state.generate_children(turn):
         v = min_value(child, best_score, beta, 1)
         if v > best_score:
             best_score = v
@@ -300,11 +302,15 @@ if __name__ == "__main__":
     while True:
         # Set up a blank board data structure.
         game_board = GUI.getNewBoard()
+        GUI.drawBoard(game_board)
+        GUI.updateDisplay()
         # Start game data structure
         game = Game(game_board)
         while not game.is_game_over():
             game.next_turn()
             print_board(game.current_state)
+            GUI.drawBoard(game.board)
+            GUI.updateDisplay()
 
         # Necessary for GUI
         WINNER = '' if game.draw() else GUI.COMPUTER if ~game.turn == -1 else GUI.HUMAN
