@@ -102,7 +102,7 @@ class State:
     0  7   14  21  28  35  42
     """
 
-    status = ''
+    status = 3
 
     def __init__(self, ai_position, game_position, depth=0):
         self.ai_position = ai_position
@@ -141,13 +141,16 @@ class State:
     def terminal_node_test(self):
         """ Test if current state is a terminal node """
         if self.is_winning_state(self.ai_position):
-            self.status = "AI"
+            # AI Wins
+            self.status = -1
             return True
         elif self.is_winning_state(self.player_position):
-            self.status = "PLAYER"
+            # Player Wins
+            self.status = 1
             return True
         elif self.is_draw(self.game_position):
-            self.status = "DRAW"
+            # Draw
+            self.status = 0
             return True
         else:
             return False
@@ -157,11 +160,14 @@ class State:
         Score based on who can win. Score computed as 22 minus number of moves played
         i.e. AI wins with 4th move, score = 22 - 4 = 18
         """
-        if self.status == "AI":
+        if self.status == -1:
+            # AI Wins
             return 22 - (self.depth // 2)
-        elif self.status == "PLAYER":
+        elif self.status == 1:
+            # Player Wins
             return -1 * (22 - (self.depth // 2))
-        elif self.status == "DRAW":
+        elif self.status == 0:
+            # Draw
             return 0
         elif self.depth % 2 == 0:
             # MAX node returns
