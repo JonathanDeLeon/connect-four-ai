@@ -119,6 +119,11 @@ def drawBoard(board, extraToken=None):
     DISPLAYSURF.blit(BLACKTOKENIMG, BLACKPILERECT)  # black on the right
 
 
+def updateDisplay():
+    pygame.display.update()
+    FPSCLOCK.tick()
+
+
 def getHumanInteraction(board):
     draggingToken = False
     tokenx, tokeny = None, None

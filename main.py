@@ -302,11 +302,15 @@ if __name__ == "__main__":
     while True:
         # Set up a blank board data structure.
         game_board = GUI.getNewBoard()
+        GUI.drawBoard(game_board)
+        GUI.updateDisplay()
         # Start game data structure
         game = Game(game_board)
         while not game.is_game_over():
             game.next_turn()
             print_board(game.current_state)
+            GUI.drawBoard(game.board)
+            GUI.updateDisplay()
 
         # Necessary for GUI
         WINNER = '' if game.draw() else GUI.COMPUTER if ~game.turn == -1 else GUI.HUMAN
