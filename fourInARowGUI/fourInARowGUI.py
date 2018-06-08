@@ -162,13 +162,13 @@ def dropHumanToken(board, column):
 def animateDroppingToken(board, column, color):
     x = XMARGIN + column * SPACESIZE
     y = YMARGIN - SPACESIZE
-    dropSpeed = 1.0
+    dropSpeed = 2.0
 
     lowestEmptySpace = getLowestEmptySpace(board, column)
 
     while True:
         y += int(dropSpeed)
-        dropSpeed += 0.5
+        dropSpeed += 2
         if int((y - YMARGIN) / SPACESIZE) >= lowestEmptySpace:
             return
         drawBoard(board, {'x': x, 'y': y, 'color': color})
@@ -179,20 +179,20 @@ def animateDroppingToken(board, column, color):
 def animateComputerMoving(board, column):
     x = BLACKPILERECT.left
     y = BLACKPILERECT.top
-    speed = 1.0
+    speed = 2.0
     # moving the black tile up
     while y > (YMARGIN - SPACESIZE):
         y -= int(speed)
-        speed += 0.5
+        speed += 1
         drawBoard(board, {'x': x, 'y': y, 'color': BLACK})
         pygame.display.update()
         FPSCLOCK.tick()
     # moving the black tile over
     y = YMARGIN - SPACESIZE
-    speed = 1.0
+    speed = 2.0
     while x > (XMARGIN + column * SPACESIZE):
         x -= int(speed)
-        speed += 0.5
+        speed += 1.0
         drawBoard(board, {'x': x, 'y': y, 'color': BLACK})
         pygame.display.update()
         FPSCLOCK.tick()
