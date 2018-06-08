@@ -55,6 +55,7 @@ class Game:
 
     def query_player(self):
         """Make a move by querying standard input."""
+        print("\nPlayer's Move...")
         column = None
         while column is None:
             # column = input('Your move identify column [0-6]? ')
@@ -69,11 +70,12 @@ class Game:
             except (ValueError, IndexError):
                 print("Invalid move. Try again...")
                 column = None
+        GUI.dropHumanToken(self.board, column)
+
         new_position, new_game_position = make_move(self.current_state.player_position,
                                                     self.current_state.game_position, column)
         self.current_state = State(self.current_state.ai_position, new_game_position, self.current_state.depth + 1)
 
-        GUI.dropHumanToken(self.board, column)
 
     def query_AI(self):
         """ AI Bot chooses next best move from current state """
@@ -85,7 +87,7 @@ class Game:
         column = temp_position ^ self.current_state.ai_position
         column = (column.bit_length() - 1) // 7
         GUI.animateComputerMoving(self.board, column)
-        GUI.makeMove(self.board, 'black', column)
+        GUI.makeMove(self.board, GUI.BLACK, column)
 
 
 class State:
@@ -306,5 +308,5 @@ if __name__ == "__main__":
             print_board(game.current_state)
 
         # Necessary for GUI
-        WINNER = '' if game.draw() else 'computer' if ~game.turn == -1 else 'human'
+        WINNER = '' if game.draw() else GUI.COMPUTER if ~game.turn == -1 else GUI.HUMAN
         GUI.processGameOver(WINNER, game.board)
