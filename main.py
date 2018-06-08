@@ -245,7 +245,6 @@ def alphabeta_search(state, d=7):
     best_action = None
     for child in state.generate_children():
         v = min_value(child, best_score, beta, 1)
-        print(v)
         if v > best_score:
             best_score = v
             best_action = child
