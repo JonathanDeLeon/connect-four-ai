@@ -76,7 +76,6 @@ class Game:
                                                     self.current_state.game_position, column)
         self.current_state = State(self.current_state.ai_position, new_game_position, self.current_state.depth + 1)
 
-
     def query_AI(self):
         """ AI Bot chooses next best move from current state """
         print("\nAI's Move...")
