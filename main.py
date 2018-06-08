@@ -166,7 +166,9 @@ class State:
 
     def generate_children(self):
         """ For each column entry, generate a new State if the new position is valid"""
-        for column in range(0, 7):
+        for i in range(0,7):
+            # Select column starting from the middle and then to the edges index order [3,2,4,1,5,0,6]
+            column = 3 + (1-2*(i%2))*(i+1) // 2
             if not self.game_position & (1 << (7 * column + 5)):
                 if self.depth % 2 == 0:
                     # AI (MAX) Move
