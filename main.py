@@ -14,12 +14,12 @@ class Game:
 
     def __init__(self):
         self.current_state = State(0, 0)
-        self.turn = self.PLAYER
+        self.turn = self.AI
 
     def is_game_over(self):
         if self.has_winning_state():
             """Display who won"""
-            print("AI Bot won!") if self.turn == self.AI else print("Congratulations, you won!")
+            print("AI Bot won!") if ~self.turn == self.AI else print("Congratulations, you won!")
             return True
         elif self.draw():
             print("Draw...Thank you...come again")
@@ -28,10 +28,11 @@ class Game:
 
     def draw(self):
         """Check current state to determine if it is in a draw"""
-        return not self.has_winning_state() and all(self.current_state.game_position & (1 << (7 * column + 5)) for column in range(0, 6))
+        return State.is_draw(self.current_state.game_position) and not self.has_winning_state()
 
     def has_winning_state(self):
-        return State.is_winning_state(self.current_state.ai_position) or State.is_winning_state(self.current_state.ai_position ^ self.current_state.game_position)
+        return State.is_winning_state(self.current_state.ai_position) or State.is_winning_state(
+            self.current_state.player_position)
 
     def next_turn(self):
         if self.turn == self.AI:
@@ -39,10 +40,7 @@ class Game:
         else:
             self.query_player()
 
-        if self.has_winning_state():
-            return self.is_game_over()
-
-        #self.turn = (self.turn + 1) % 2
+        # self.turn = (self.turn + 1) % 2
         # Apply one's complement (invert bits); 0 ~= -1
         self.turn = ~self.turn
 
@@ -63,28 +61,43 @@ class Game:
                 column = None
         new_position, new_game_position = make_move(self.current_state.player_position,
                                                     self.current_state.game_position, column)
-        self.current_state.game_position = new_game_position
-        self.current_state.depth += 1
-        # self.current_state = State(new_position, new_game_position, self.current_state.depth + 1)
+        self.current_state = State(self.current_state.ai_position, new_game_position, self.current_state.depth + 1)
 
     def query_AI(self):
         """ AI Bot chooses next best move from current state """
         print("\nAI's Move...")
-        self.current_state = alphabeta_search(self.current_state)
+        self.current_state = alphabeta_search(self.current_state, d=10)
 
 
 def make_move(position, mask, col):
+    """ Helper method to make a move and return new position along with new board position """
     opponent_position = position ^ mask
     new_mask = mask | (mask + (1 << (col * 7)))
     return opponent_position ^ new_mask, new_mask
 
 
 def make_move_opponent(position, mask, col):
+    """ Helper method to only return new board position """
     new_mask = mask | (mask + (1 << (col * 7)))
     return position, new_mask
 
 
 class State:
+    """
+    State class
+    Each position is a 6x7 board with top row as sentinel row of 0's; so a 7x7 bitboard
+    Bit positions corresponding to the board are as follows...
+    -  -   -   -   -   -   -
+    5  12  19  26  33  40  47
+    4  11  18  25  32  39  46
+    3  10  17  24  31  38  45
+    2  9   16  23  30  37  44
+    1  8   15  22  29  36  43
+    0  7   14  21  28  35  42
+    """
+
+    status = ''
+
     def __init__(self, ai_position, game_position, depth=0):
         self.ai_position = ai_position
         self.game_position = game_position
@@ -115,68 +128,123 @@ class State:
         # Nothing found
         return False
 
-    def terminal_test(self):
-        if State.is_winning_state(self.ai_position) or State.is_winning_state(self.ai_position ^ self.game_position):
+    @staticmethod
+    def is_draw(position):
+        return all(position & (1 << (7 * column + 5)) for column in range(0, 7))
+
+    def terminal_node_test(self):
+        """ Test if current state is a terminal node """
+        if self.is_winning_state(self.ai_position):
+            self.status = "AI"
+            return True
+        elif self.is_winning_state(self.player_position):
+            self.status = "PLAYER"
+            return True
+        elif self.is_draw(self.game_position):
+            self.status = "DRAW"
             return True
         else:
             return False
 
     def calculate_heuristic(self):
-        if self.is_winning_state(self.ai_position):
-            return 22 - self.depth
-        elif self.is_winning_state(self.ai_position ^ self.game_position):
-            return -1 * (22 - self.depth)
+        """
+        Score based on who can win. Score computed as 22 minus number of moves played
+        i.e. AI wins with 4th move, score = 22 - 4 = 18
+        """
+        if self.status == "AI":
+            return 22 - (self.depth // 2)
+        elif self.status == "PLAYER":
+            return -1 * (22 - (self.depth // 2))
+        elif self.status == "DRAW":
+            return 0
+        elif self.depth % 2 == 0:
+            # MAX node returns
+            return infinity
         else:
-            return None
+            # MIN node returns
+            return -infinity
 
     def generate_children(self):
         """ For each column entry, generate a new State if the new position is valid"""
         for column in range(0, 7):
             if not self.game_position & (1 << (7 * column + 5)):
-                new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
+                if self.depth % 2 == 0:
+                    # AI (MAX) Move
+                    new_ai_position, new_game_position = make_move(self.ai_position, self.game_position, column)
+                else:
+                    # Player (MIN) move
+                    new_ai_position, new_game_position = make_move_opponent(self.ai_position, self.game_position,
+                                                                            column)
                 yield State(new_ai_position, new_game_position, self.depth + 1)
 
     def __str__(self):
-        # return str(self.game_position)
-        return '{0:049b}'.format(self.game_position)
+        return '{0:049b}'.format(self.ai_position) + ' ; ' + '{0:049b}'.format(self.game_position)
+
+    def __hash__(self):
+        return hash((self.ai_position, self.game_position, self.depth % 2))
+
+    def __eq__(self, other):
+        return (self.ai_position, self.game_position, self.depth % 2) == (
+            other.ai_position, other.game_position, other.depth % 2)
 
 
 infinity = float('inf')
 
 
-def alphabeta_search(state):
+def alphabeta_search(state, d=7):
     """Search game state to determine best action; use alpha-beta pruning. """
 
     # Functions used by alpha beta
-    def max_value(state, alpha, beta):
-        if state.terminal_test():
+    def max_value(state, alpha, beta, depth):
+        if cutoff_search(state, depth):
             return state.calculate_heuristic()
+
         v = -infinity
         for child in state.generate_children():
-            v = max(v, min_value(child, alpha, beta))
+            if child in seen:
+                continue
+            v = max(v, min_value(child, alpha, beta, depth + 1))
+            seen[child] = alpha
             if v >= beta:
+                # Min is going to completely ignore this route
+                # since v will not get any lower than beta
                 return v
             alpha = max(alpha, v)
+        if v == -infinity:
+            # If win/loss/draw not found, don't return -infinity to MIN node
+            return infinity
         return v
 
-    def min_value(state, alpha, beta):
-        if state.terminal_test():
+    def min_value(state, alpha, beta, depth):
+        if cutoff_search(state, depth):
             return state.calculate_heuristic()
+
         v = infinity
         for child in state.generate_children():
-            v = min(v, max_value(child, alpha, beta))
+            if child in seen:
+                continue
+            v = min(v, max_value(child, alpha, beta, depth + 1))
+            seen[child] = alpha
             if v <= alpha:
+                # Max is going to completely ignore this route
+                # since v will not get any higher than alpha
                 return v
             beta = min(beta, v)
+        if v == infinity:
+            # If win/loss/draw not found, don't return infinity to MAX node
+            return -infinity
         return v
 
+    # Keep track of seen states using their hash
+    seen = {}
+
     # Body of alpha beta_search:
+    cutoff_search = (lambda state, depth: depth > d or state.terminal_node_test())
     best_score = -infinity
     beta = infinity
     best_action = None
-    # TODO: Debug value of v
     for child in state.generate_children():
-        v = min_value(child, best_score, beta)
+        v = min_value(child, best_score, beta, 1)
         print(v)
         if v > best_score:
             best_score = v
@@ -186,14 +254,7 @@ def alphabeta_search(state):
 
 def print_board(state):
     """
-    Helper method to pretty print binary board (6x7 board with top row as sentinel row of 0's)
-    -  -   -   -   -   -   -
-    5  12  19  26  33  40  47
-    4  11  18  25  32  39  46
-    3  10  17  24  31  38  45
-    2  9   16  23  30  37  44
-    1  8   15  22  29  36  43
-    0  7   14  21  28  35  42
+    Helper method to pretty print binary board (6x7 board with top sentinel row of 0's)
     """
     ai_board, total_board = state.ai_position, state.game_position
     for row in range(5, -1, -1):
@@ -209,6 +270,7 @@ def print_board(state):
 
 
 if __name__ == "__main__":
+
     game = Game()
 
     print("Welcome to Connect Four!")
