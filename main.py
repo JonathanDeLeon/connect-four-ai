@@ -6,15 +6,24 @@
 #
 # Problem:
 # Create a Connect Four game and implement an AI bot that uses minimax algorithm with alpha-beta pruning
+#
+# References
+# GUI was created by AI Sweigart; we did some code refactoring and connected our algorithm/classes to the GUI
+# http://inventwithpython.com/blog/2011/06/10/new-game-source-code-four-in-a-row/
+
+from fourInARowGUI import fourInARowGUI as GUI
+
+infinity = float('inf')
 
 
 class Game:
     AI = -1
     PLAYER = 0
 
-    def __init__(self):
+    def __init__(self, game_board):
         self.current_state = State(0, 0)
         self.turn = self.AI
+        self.board = game_board
 
     def is_game_over(self):
         if self.has_winning_state():
@@ -48,9 +57,10 @@ class Game:
         """Make a move by querying standard input."""
         column = None
         while column is None:
-            column = input('Your move identify column [0-6]? ')
+            # column = input('Your move identify column [0-6]? ')
             try:
-                column = int(column)
+                # column = int(column)
+                column = GUI.getHumanInteraction(self.board)
                 # Check if move is legal
                 if not 0 <= column <= 6:
                     raise ValueError
@@ -63,23 +73,19 @@ class Game:
                                                     self.current_state.game_position, column)
         self.current_state = State(self.current_state.ai_position, new_game_position, self.current_state.depth + 1)
 
+        GUI.dropHumanToken(self.board, column)
+
     def query_AI(self):
         """ AI Bot chooses next best move from current state """
         print("\nAI's Move...")
-        self.current_state = alphabeta_search(self.current_state, d=10)
+        temp_position = self.current_state.ai_position
+        self.current_state = alphabeta_search(self.current_state, d=7)
 
-
-def make_move(position, mask, col):
-    """ Helper method to make a move and return new position along with new board position """
-    opponent_position = position ^ mask
-    new_mask = mask | (mask + (1 << (col * 7)))
-    return opponent_position ^ new_mask, new_mask
-
-
-def make_move_opponent(position, mask, col):
-    """ Helper method to only return new board position """
-    new_mask = mask | (mask + (1 << (col * 7)))
-    return position, new_mask
+        # Get column for GUI
+        column = temp_position ^ self.current_state.ai_position
+        column = (column.bit_length() - 1) // 7
+        GUI.animateComputerMoving(self.board, column)
+        GUI.makeMove(self.board, 'black', column)
 
 
 class State:
@@ -166,9 +172,9 @@ class State:
 
     def generate_children(self):
         """ For each column entry, generate a new State if the new position is valid"""
-        for i in range(0,7):
+        for i in range(0, 7):
             # Select column starting from the middle and then to the edges index order [3,2,4,1,5,0,6]
-            column = 3 + (1-2*(i%2))*(i+1) // 2
+            column = 3 + (1 - 2 * (i % 2)) * (i + 1) // 2
             if not self.game_position & (1 << (7 * column + 5)):
                 if self.depth % 2 == 0:
                     # AI (MAX) Move
@@ -188,9 +194,6 @@ class State:
     def __eq__(self, other):
         return (self.ai_position, self.game_position, self.depth % 2) == (
             other.ai_position, other.game_position, other.depth % 2)
-
-
-infinity = float('inf')
 
 
 def alphabeta_search(state, d=7):
@@ -253,6 +256,19 @@ def alphabeta_search(state, d=7):
     return best_action
 
 
+def make_move(position, mask, col):
+    """ Helper method to make a move and return new position along with new board position """
+    opponent_position = position ^ mask
+    new_mask = mask | (mask + (1 << (col * 7)))
+    return opponent_position ^ new_mask, new_mask
+
+
+def make_move_opponent(position, mask, col):
+    """ Helper method to only return new board position """
+    new_mask = mask | (mask + (1 << (col * 7)))
+    return position, new_mask
+
+
 def print_board(state):
     """
     Helper method to pretty print binary board (6x7 board with top sentinel row of 0's)
@@ -271,11 +287,18 @@ def print_board(state):
 
 
 if __name__ == "__main__":
-
-    game = Game()
-
     print("Welcome to Connect Four!")
-    print_board(game.current_state)
-    while not game.is_game_over():
-        game.next_turn()
-        print_board(game.current_state)
+
+    GUI.run()
+    while True:
+        # Set up a blank board data structure.
+        game_board = GUI.getNewBoard()
+        # Start game data structure
+        game = Game(game_board)
+        while not game.is_game_over():
+            game.next_turn()
+            print_board(game.current_state)
+
+        # Necessary for GUI
+        WINNER = '' if game.draw() else 'computer' if ~game.turn == -1 else 'human'
+        GUI.processGameOver(WINNER, game.board)
